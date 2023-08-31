@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<title>Geography lookup builder</title>
+	<link rel="icon" href="data:image/svg+xml,%3C%3Fxml version='1.0' encoding='UTF-8'%3F%3E%3Csvg width='640' height='640' overflow='auto' viewBox='-32 -32 64 64' xmlns='http://www.w3.org/2000/svg'%3E%3Cmask id='oi-person'%3E%3Cpath d='m-32-32h64v64h-12v-24a4 4 0 0 0 -4 -4h-8a4 4 0 0 0 -4 4v24h-36zm44 27m-8 0a8 8 0 1 0 16 0 8 8 0 1 0-16 0' fill='%23fff'%3E%3C/path%3E%3C/mask%3E%3Cg id='oi-logo' fill='%23F9BC26'%3E%3Ccircle r='32' mask='url(%23oi-person)'%3E%3C/circle%3E%3C/g%3E%3C/svg%3E" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta charset="utf-8" />
+	<link rel="StyleSheet" href="resources/leaflet.css" type="text/css" />
+	<link rel="StyleSheet" href="resources/style.css" type="text/css" />
+	<style>
+	#myFile { display: block; }
+	textarea { width: 100%; margin: 0; }
+	.file { padding: 1em; background: #efefef; }
+	.progressbar { width: 100%; background: transparent; position: relative; }
+	.progressbar .progress-inner {
+		width: 0;
+		height: 4px;
+		text-align: center;
+		background: -moz-linear-gradient(left, #7d71b4, #00b9e4);
+		background: -webkit-linear-gradient(left, #7d71b4, #00b9e4);
+		background: linear-gradient(to right, #7d71b4, #00b9e4);
+	}
+	.features { font-family: Poppins; }
+	#map { margin-bottom: 1em; }
+	#map, textarea { aspect-ratio: 2 / 1; border: 1px solid #555; width: 100%; height: auto; }
+	.leaflet-popup-content h3 { margin-top: 0; padding-top: 0; }
+	.leaflet-control-attribution { font-size: 0.8em; }
+	.dropzone {
+		border: 2px dashed #999999;
+		background: transparent;
+		padding: 2em;
+		color: #333333;
+		text-align: center;
+		position: relative;
+	}
+	.dropzone input {
+		position: absolute;
+		left: 0px;
+		top: 0px;
+		margin-top: 0;
+		width: 100%;
+		height: 100%;
+		opacity: 0;
+	}
+	#files { margin-bottom: 1em; margin-top: 2em; }
+	#files select { width: 100%; margin-top: 1em; }
+	.grid p a { padding: 0; display: inline; }
+	@media only screen and (max-width: 700px) {
+		.grid { grid-template-columns: 100%; }
+		#map, textarea { aspect-ratio: 1 / 1; }
+	}
+	</style>
+</head>
+<body class="b1-bg">
+
+	<div class="b6-bg">
+
+		<header>
+			<div class="b1-bg">
+				<div class="holder padded" style="text-align:center;">
+					<a href="https://open-innovations.org/"><svg width="80" height="80" overflow="auto" viewBox="-32 -32 64 64" xmlns="http://www.w3.org/2000/svg"><mask id="oi-person"><path d="m-32-32h64v64h-12v-24a4 4 0 0 0 -4 -4h-8a4 4 0 0 0 -4 4v24h-36zm44 27m-8 0a8 8 0 1 0 16 0 8 8 0 1 0-16 0" fill="#fff"></path></mask><g id="oi-logo" fill="#F9BC26"><circle r="32" mask="url(#oi-person)"></circle></g></svg></a>
+					<h1>Geography lookup builder</h1>
+				</div>
+			</div>
+		</header>
+
+		<div class="holder tallpadded padded">
+			<p>If you have a dataset that has data by, say, UK local authority and you want to combine that data into a different, larger-scale, geography such as UK regions - you'll need a lookup table to know which region each local authority is in. If the geographies are known to the ONS, <a href="https://geoportal.statistics.gov.uk/">the ONS geoportal</a> is a great place to go to get lookups. But if either of your geographies are unknown to the ONS you may need to make your own. This tool aims to help.</p>
+
+			<ol class="grid" id="files">
+				<li id="file1" class="file">
+					<h2>Smaller-scale geography</h2>
+					<p>Each feature will create a row in the output<br />e.g. <a href="LAD2022.geojson">UK local authority district boundaries (2022)</a></p>
+					<div class="dropzone">
+						<input type="file" accept="application/geo+json,application/json,.geojson,.geojsonl" class="button c3-bg" />
+						<div class="helpertext">
+							Drop GeoJSON file here<br />(or click to browse files)<br>
+							<div class="summary"></div>
+						</div>
+					</div>
+					<div class="progressbar"><div class="progress-inner"></div></div>
+				</li>
+				<li id="file2" class="file">
+					<h2>Larger-scale geography</h2>
+					<p>The most-overlapping feature from this will be found<br />e.g. <a href="ITL12021.geojson">ITL1 boundaries (2021)</a></p>
+					<div class="dropzone">
+						<input type="file" accept="application/geo+json,application/json,.geojson,.geojsonl" class="button c3-bg" />
+						<div class="helpertext">
+							Drop GeoJSON file here<br />(or click to browse files)<br>
+							<div class="summary"></div>
+						</div>
+					</div>
+					<div class="progressbar"><div class="progress-inner"></div></div>
+				</li>
+			</ol>
+
+			<div id="message"></div>
+
+			<div id="map">
+
+				<div class="spinner" style="text-align:center;">
+					<img src="https://open-innovations.org/resources/images/loader.svg" alt="Loading..." />
+				</div>
+
+			</div>
+
+			<div id="output">
+			</div>
+
+
+		</div>
+	</div>
+	
+	<footer class="b1-bg padded">
+		<div class="holder tallpadded">
+			<h2>Credits</h2>
+			<p>This open source project is made possible thanks to other open source and open data projects:</p>
+
+			<ul>
+				<li>Created by Stuart Lowe / Open Innovations 2023 / <a href="https://github.com/open-innovations/parkulator/">code on GitHub</a> (MIT licence).</li>
+				<li>Tiles &copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a> / <a href="http://cartodb.com/attributions">CartoDB</a>.</li>
+				<li>Uses <a href="https://leafletjs.com/">Leaflet</a>, <a href="https://turfjs.org/">turf.js</a> (custom built with our <a href="https://github.com/open-innovations/lawnmower">lawnmower</a>), and our own <a href="https://open-innovations.github.io/oi.chunked-file-reader.js/">chunked file reader</a>.</li>
+			</ul>
+		</div>
+	</footer>
+
+	<script type="text/javascript" src="resources/leaflet.js"></script>
+	<script type="text/javascript" src="resources/oi.turf.min.js"></script>
+	<script type="text/javascript" src="resources/builder.js"></script>
+	<script type="text/javascript" src="resources/oi.chunked-file-reader.js"></script>
+
+	<script src="https://open-innovations.org/resources/oi.log.js"></script>
+	<script>
+	OI.log.setup({'id':'odileeds','target':['open-innovations.org','open-innovations.github.io']}).add('action=view');
+	</script>
+</body>
+</html>
