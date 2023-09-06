@@ -271,17 +271,21 @@
 		}
 		function finish(){
 			var csv = '';
+			var json = {};
 			var line = '';
-      var i,f,v,values,min,idx,val;
+			var i,f,v,values,min,idx,val;
 			csv += files[0].selector.value;
 			for(i = 1; i < files.length; i++) csv += ','+files[i].selector.value+',overlap';
 			csv += "\n";
 			
 			for(f = 0; f < files[0].features.length; f++){
 				line = '';
+				key = ""
 				if(files[0].selector.value in files[0].features[f].properties){
+					key = files[0].features[f].properties[files[0].selector.value];
 					line += (files[0].features[f].properties[files[0].selector.value]);
 				}
+				if(key) json[key] = {};
 				for(i = 1; i < files.length; i++){
 					line += ',';
 					values = files[0].features[f].matches[i];
@@ -289,6 +293,7 @@
 						min = 0;
 						idx = -1;
 						for(v = 0; v < values.length; v++){
+							if(key) json[key][values[v].properties[files[i].selector.value]] = values[v].fract;
 							val = values[v].fract;
 							if(val > min){
 								idx = v;
@@ -309,6 +314,7 @@
 			}
 			document.getElementById('message').innerHTML = "";
 			document.getElementById('output').innerHTML = '<h2>Lookup table</h2><textarea>'+csv+'</textarea><p style="text-align:center;font-size:1em;"><button type="button" id="save" class="c3-bg">Save as CSV</button></p>';
+			document.getElementById('json').innerHTML = '<h2>Lookup JSON</h2><textarea>'+JSON.stringify(json)+'</textarea><p style="text-align:center;font-size:1em;"><button type="button" id="savejson" class="c3-bg">Save as JSON</button></p>';
 			document.getElementById('save').addEventListener('click',function(){
 				console.log('save');
 
@@ -317,6 +323,34 @@
 
 				var textFileAsBlob = new Blob([csv], {type:'text/plain'});
 				var fileNameToSaveAs = "lookup-"+files[0].selector.value.replace(/ /,"_")+"-"+files[1].selector.value.replace(/ /,"_")+".csv";
+
+				function destroyClickedElement(event){ document.body.removeChild(event.target); }
+
+				var dl = document.createElement("a");
+				dl.download = fileNameToSaveAs;
+				dl.innerHTML = "Download File";
+				if(window.webkitURL != null){
+					// Chrome allows the link to be clicked
+					// without actually adding it to the DOM.
+					dl.href = window.webkitURL.createObjectURL(textFileAsBlob);
+				}else{
+					// Firefox requires the link to be added to the DOM
+					// before it can be clicked.
+					dl.href = window.URL.createObjectURL(textFileAsBlob);
+					dl.onclick = destroyClickedElement;
+					dl.style.display = "none";
+					document.body.appendChild(dl);
+				}
+				dl.click();
+			});
+			document.getElementById('savejson').addEventListener('click',function(){
+				console.log('save json',json);
+
+				// Bail out if there is no Blob function
+				if(typeof Blob!=="function") return this;
+
+				var textFileAsBlob = new Blob([JSON.stringify(json)], {type:'text/json'});
+				var fileNameToSaveAs = "lookup-"+files[0].selector.value.replace(/ /,"_")+"-"+files[1].selector.value.replace(/ /,"_")+".json";
 
 				function destroyClickedElement(event){ document.body.removeChild(event.target); }
 
