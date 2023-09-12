@@ -49,7 +49,7 @@
 	function popuptext(feature){
 		// does this feature have a property named popupContent?
 		var popup = '';
-    var t,tags,bits,title,p,f,added;
+		var t,tags,bits,title,p,f,added;
 		if(feature.properties){
 			// If this feature has a default popup
 			// Convert "other_tags" e.g "\"ele:msl\"=>\"105.8\",\"ele:source\"=>\"GPS\",\"material\"=>\"stone\""
@@ -223,7 +223,7 @@
 		function matchFeatures(){
 			_obj.features = files[0].features;
 			var i,f,p;
-      for(i = 0; i < files.length; i++){
+	  for(i = 0; i < files.length; i++){
 				for(f = 0; f < files[i].features.length; f++){
 					p = {'bbox':turf.bbox(files[i].features[f]),'properties':files[i].features[f].properties};
 					p.poly = files[i].features[f];
@@ -237,14 +237,21 @@
 			buildOutput();			
 		}
 		var midx = 0;
+		function warning(txt,cls){
+			var el = document.createElement('div');
+			el.classList.add('warning');
+			el.classList.add('padded-bottom');
+			if(cls) el.classList.add(cls);
+			el.innerHTML = txt;
+			document.getElementById('warnings').appendChild(el);
+		}
 		function findMatches(){
 
 			if(midx < files[0].features.length){
-        
-        var bbox1,bbox2,i,f2,overlap,fract;
+		
+				var bbox1,bbox2,i,f2,overlap,fract;
 				if(midx==0){
 					document.getElementById('message').innerHTML = '<div class="spinner" style="text-align:center;"><img src="https://open-innovations.org/resources/images/loader.svg" alt="Loading..." /></div><div class="text"></div>';
-					
 				}
 				document.querySelector('#message .text').innerHTML = '<p>Matching feature <span class="features">'+(midx+1)+'</span>/<span class="features">'+files[0].features.length+'</span></p>';
 
@@ -255,10 +262,19 @@
 						bbox2 = files[i].features[f2].bbox;
 						// 2 is to right of 1 or 2 is to the left of 1 or 2 is above 1 or 2 is below 1
 						if(!(bbox2[0] > bbox1[2] || bbox2[2] < bbox1[0] || bbox2[1] > bbox1[3] || bbox2[3] < bbox2[1])){
-							overlap = turf.intersect(files[0].features[midx].poly, files[i].features[f2].poly);
+							try {
+								overlap = turf.intersect(files[0].features[midx].poly, files[i].features[f2].poly);
+							
+							}catch(err){
+								overlap = undefined;
+								console.error('Error with turf.intersect',err);
+								warning('Error finding intersect for '+files[0].features[midx].properties[files[0].selector.value]+'/'+files[i].features[f2].properties[files[1].selector.value]);
+							}
 							if(overlap){
 								fract = parseFloat((turf.area(overlap)/files[0].features[midx].area).toFixed(3));
-								files[0].features[midx].matches[i].push({'fract':fract,'properties':files[i].features[f2].properties});
+								if(fract > 0){
+									files[0].features[midx].matches[i].push({'fract':fract,'properties':files[i].features[f2].properties});
+								}
 							}
 						}
 					}
