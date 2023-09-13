@@ -110,7 +110,7 @@
 
 				_obj.features = [];
 				this.geo = L.geoJSON({'type':'FeatureCollection','features':[]},{
-					'style': { "color": opts.colour, "weight": 2, "opacity": 0.8, "fillOpacity": 0.08 }
+					'style': { "color": opts.colour, "weight": opts.width||2, "opacity": 0.8, "fillOpacity": 0.08 }
 				}).addTo(opts.map);
 				this.geo.bindPopup(function(feature){ return popuptext(feature.feature); });
 				
@@ -146,7 +146,10 @@
 				
 				// Build a select box
 				_obj.selector = document.createElement('select');
-				if(typeof opts.select==="function") _obj.selector.addEventListener('change',opts.select);
+				if(typeof opts.select==="function"){
+					_obj.selector.addEventListener('change',opts.select);
+					document.getElementById('threshold').addEventListener('change',opts.select);
+				}
 				el.appendChild(_obj.selector);
 				var opt = '<option value="">Select a property for the feature ID</option>';
 				for(var key in _obj.features[0].properties){
@@ -154,6 +157,7 @@
 				}
 				_obj.selector.innerHTML = opt;
 				_obj.loaded = true;
+				
 				if(typeof opts.complete==="function") opts.complete.call(opts['this']||this);
 			}
 		});
@@ -223,7 +227,7 @@
 		function matchFeatures(){
 			_obj.features = files[0].features;
 			var i,f,p;
-	  for(i = 0; i < files.length; i++){
+			for(i = 0; i < files.length; i++){
 				for(f = 0; f < files[i].features.length; f++){
 					p = {'bbox':turf.bbox(files[i].features[f]),'properties':files[i].features[f].properties};
 					p.poly = files[i].features[f];
@@ -289,6 +293,8 @@
 			var csv = '';
 			var json = {};
 			var line = '';
+			var threshold = parseFloat(document.getElementById('threshold').value);
+			if(typeof threshold!=="number") threshold = 0.001;
 			var i,f,v,values,min,idx,val;
 			csv += files[0].selector.value;
 			for(i = 1; i < files.length; i++) csv += ','+files[i].selector.value+',overlap';
@@ -309,8 +315,14 @@
 						min = 0;
 						idx = -1;
 						for(v = 0; v < values.length; v++){
-							if(key) json[key][values[v].properties[files[i].selector.value]] = values[v].fract;
 							val = values[v].fract;
+							if(key){
+								if(val >= 1-threshold) val = 1;
+								if(val <= threshold) val = 0;
+								if(val > 0){
+									json[key][values[v].properties[files[i].selector.value]] = val;
+								}
+							}
 							if(val > min){
 								idx = v;
 								min = val;
@@ -400,7 +412,7 @@
 
 		var fileareas = document.querySelectorAll('#files .file');
 		var files = new Array(fileareas.length);
-		for(var f = 0; f < fileareas.length; f++) files[f] = new FileLoader(fileareas[f],{'map':this.map,'colour':colours[f],'complete':loaded,'progress':progress,'this':this,'select':buildOutput});
+		for(var f = 0; f < fileareas.length; f++) files[f] = new FileLoader(fileareas[f],{'map':this.map,'colour':colours[f],'complete':loaded,'progress':progress,'this':this,'select':buildOutput,'width':(f==0 ? 4 : 2)});
 
 		return this;
 	}
